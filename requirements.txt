@@ -5,7 +5,3 @@ openai
 python-pptx
 requests
 authlib
-
-torch==2.2.2
-transformers
-accelerate
