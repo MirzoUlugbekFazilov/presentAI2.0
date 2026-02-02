@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.env.*
+
+# OS
+.DS_Store
+
+# Virtual env
+venv/
+env/
+
+# Railway
+railway.json
+
+# IDE
+.vscode/
+.idea/

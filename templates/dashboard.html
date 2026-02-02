@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ t.dashboard }} - PresentAI</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            line-height: 1.7;
+            color: #ffffff;
+            min-height: 100vh;
+            background: linear-gradient(
+                135deg,
+                #0f0f17 0%,
+                #1e1233 45%,
+                #191028 100%
+            );
+            overflow-x: hidden;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 240px;
+            height: 100vh;
+            background: rgba(15, 15, 25, 0.95);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255, 255, 255, 0.06);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+            transition: transform 0.3s;
+            animation: slideInLeft 0.4s ease forwards;
+        }
+
+        .sidebar-logo {
+            padding: 24px 24px 32px;
+            font-size: 22px;
+            font-weight: 800;
+            color: white;
+            text-decoration: none;
+            display: block;
+            letter-spacing: -0.5px;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding: 0 12px;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            color: #6b7280;
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .sidebar-link:hover {
+            background: rgba(255, 255, 255, 0.06);
+            color: #e4e4e7;
+        }
+
+        .sidebar-link.active {
+            background: rgba(139, 92, 246, 0.15);
+            color: #a78bfa;
+        }
+
+        .sidebar-link svg {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        .sidebar-user {
+            padding: 20px 24px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .sidebar-user-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 2px;
+        }
+
+        .sidebar-user-email {
+            font-size: 12px;
+            color: #6b7280;
+            word-break: break-all;
+        }
+
+        .sidebar-logout {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            margin: 0 12px 16px;
+            border-radius: 10px;
+            color: #f87171;
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .sidebar-logout:hover {
+            background: rgba(248, 113, 113, 0.1);
+        }
+
+        .sidebar-logout svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Main content */
+        .main-content {
+            margin-left: 240px;
+            min-height: 100vh;
+        }
+
+        /* Top bar */
+        .topbar {
+            background: rgba(15, 15, 25, 0.6);
+            backdrop-filter: blur(20px);
+            padding: 16px 40px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .topbar-greeting {
+            font-size: 15px;
+            color: #9ca3af;
+        }
+
+        .topbar-greeting strong {
+            color: #e4e4e7;
+        }
+
+        .mobile-toggle {
+            display: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #e4e4e7;
+            padding: 8px;
+        }
+
+        /* Dashboard content */
+        .dashboard-content {
+            padding: 48px 40px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .dashboard-content h1 {
+            font-size: 48px;
+            font-weight: 800;
+            color: #f4f4f5;
+            margin-bottom: 16px;
+            letter-spacing: -1.5px;
+            line-height: 1.1;
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #a78bfa, #8b5cf6, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: 18px;
+            color: #9ca3af;
+            margin-bottom: 40px;
+            font-weight: 400;
+        }
+
+        /* Form */
+        .form-container {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 36px;
+            border-radius: 20px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            margin-bottom: 48px;
+            backdrop-filter: blur(10px);
+            animation: fadeInUp 0.6s ease 0.2s forwards;
+            opacity: 0;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 15px;
+            font-weight: 600;
+            color: #e4e4e7;
+            margin-bottom: 10px;
+        }
+
+        .textarea-wrapper {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .form-container textarea {
+            width: 100%;
+            padding: 16px;
+            border: 1.5px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            font-size: 15px;
+            font-family: inherit;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            resize: vertical;
+            min-height: 120px;
+            line-height: 1.6;
+            color: #e4e4e7;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .form-container textarea::placeholder {
+            color: #6b7280;
+        }
+
+        .form-container textarea:focus {
+            outline: none;
+            border-color: #8b5cf6;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+        }
+
+        .char-counter {
+            position: absolute;
+            bottom: -22px;
+            right: 0;
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .generate-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #7c3aed, #8b5cf6);
+            color: white;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-family: inherit;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .generate-btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .generate-btn:hover::before {
+            left: 100%;
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(139, 92, 246, 0.4);
+        }
+
+        /* Tips */
+        .tips-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #e4e4e7;
+            margin-bottom: 20px;
+        }
+
+        .tips-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-bottom: 48px;
+        }
+
+        .tip-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            transition: all 0.3s;
+            animation: fadeInUp 0.5s ease forwards;
+            opacity: 0;
+        }
+
+        .tip-card:nth-child(1) { animation-delay: 0.3s; }
+        .tip-card:nth-child(2) { animation-delay: 0.4s; }
+        .tip-card:nth-child(3) { animation-delay: 0.5s; }
+        .tip-card:nth-child(4) { animation-delay: 0.6s; }
+
+        .tip-card:hover {
+            border-color: rgba(139, 92, 246, 0.3);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.1);
+        }
+
+        .tip-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .tip-text {
+            font-size: 14px;
+            color: #9ca3af;
+            line-height: 1.5;
+        }
+
+        /* Stats */
+        .stats-row {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 48px;
+        }
+
+        .stat-card {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 24px;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            text-align: center;
+            transition: all 0.3s;
+            animation: fadeInUp 0.5s ease forwards;
+            opacity: 0;
+        }
+
+        .stat-card:nth-child(1) { animation-delay: 0.5s; }
+        .stat-card:nth-child(2) { animation-delay: 0.6s; }
+        .stat-card:nth-child(3) { animation-delay: 0.7s; }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(139, 92, 246, 0.3);
+            box-shadow: 0 8px 24px rgba(139, 92, 246, 0.1);
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: 800;
+            color: #a78bfa;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: #9ca3af;
+        }
+
+        /* Footer */
+        .dashboard-footer {
+            padding: 32px 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            text-align: center;
+        }
+
+        .footer-social h3 {
+            font-size: 15px;
+            font-weight: 600;
+            color: #e4e4e7;
+            margin-bottom: 12px;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .social-link {
+            color: #a78bfa;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .social-link:hover {
+            text-decoration: underline;
+            color: #c4b5fd;
+        }
+
+        .footer-copyright {
+            font-size: 13px;
+            color: #6b7280;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .mobile-toggle {
+                display: block;
+            }
+
+            .dashboard-content {
+                padding: 32px 20px;
+            }
+
+            .dashboard-content h1 {
+                font-size: 32px;
+            }
+
+            .tips-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-row {
+                flex-direction: column;
+            }
+
+            .form-container {
+                padding: 24px 18px;
+            }
+        }
+
+        /* Overlay for mobile sidebar */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 999;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(8, 6, 14, 0.88);
+            backdrop-filter: blur(20px);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-card {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 48px 56px;
+            max-width: 440px;
+            width: 90%;
+            text-align: center;
+            animation: scaleIn 0.4s ease;
+        }
+
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.92); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .loading-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #e4e4e7;
+            margin-bottom: 8px;
+        }
+
+        .progress-percentage {
+            font-size: 56px;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -2px;
+            margin-bottom: 8px;
+            line-height: 1;
+            background: linear-gradient(135deg, #c4b5fd, #a78bfa, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .progress-label {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 24px;
+            font-weight: 500;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #7c3aed, #a78bfa, #c084fc);
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.6s ease;
+        }
+
+        .loading-error {
+            display: none;
+            color: #f87171;
+            font-size: 15px;
+            margin-top: 20px;
+        }
+
+        .loading-error.show {
+            display: block;
+        }
+
+        .loading-close {
+            display: none;
+            margin-top: 16px;
+            padding: 10px 28px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            color: #e4e4e7;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .loading-close:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .loading-close.show {
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <a href="/dashboard" class="sidebar-logo">PresentAI</a>
+
+        <nav class="sidebar-nav">
+            <a href="/dashboard" class="sidebar-link active">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+                </svg>
+                {{ t.dashboard }}
+            </a>
+            <a href="/profile" class="sidebar-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                </svg>
+                {{ t.profile }}
+            </a>
+            <a href="/history" class="sidebar-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                </svg>
+                {{ t.history }}
+            </a>
+        </nav>
+
+        <a href="/logout" class="sidebar-logout">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            {{ t.logout }}
+        </a>
+
+        <div class="sidebar-user">
+            <div class="sidebar-user-name">{{ user }}</div>
+        </div>
+    </aside>
+
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="topbar">
+            <button class="mobile-toggle" onclick="toggleSidebar()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
+                </svg>
+            </button>
+            <div class="topbar-greeting">{{ t.welcome }}, <strong>{{ user }}</strong></div>
+            <div></div>
+        </div>
+
+        <div class="dashboard-content">
+            <h1>{{ t.create_title }} <span class="gradient-text">{{ t.stunning_pres }}</span><br>{{ t.in_seconds }}</h1>
+            <p class="hero-subtitle">{{ t.hero_subtitle }}</p>
+
+            <div class="form-container">
+                <form id="generateForm">
+                    <label class="form-label">{{ t.describe_pres }}</label>
+                    <div class="textarea-wrapper">
+                        <textarea
+                            name="user_prompt"
+                            rows="4"
+                            placeholder="Example: The future of AI in healthcare - covering diagnosis, treatment, patient care, and ethical considerations"
+                            required
+                            maxlength="1000"
+                            id="userPrompt"
+                        ></textarea>
+                        <span class="char-counter"><span id="charCount">0</span>/1000</span>
+                    </div>
+                    <button type="submit" class="generate-btn" id="generateBtn">
+                        <span>{{ t.generate }}</span>
+                    </button>
+                </form>
+            </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-card">
+            <div class="loading-title">{{ t.loading_generating }}</div>
+            <div class="progress-percentage" id="progressPercent">0%</div>
+            <div class="progress-label" id="progressLabel">0% {{ t.loading_completed }}</div>
+            <div class="progress-bar-container">
+                <div class="progress-bar-fill" id="progressBar"></div>
+            </div>
+            <div class="loading-error" id="loadingError"></div>
+            <button class="loading-close" id="loadingClose" onclick="hideLoading()">Close</button>
+        </div>
+    </div>
+
+            <h3 class="tips-title">{{ t.tips_title }}</h3>
+            <div class="tips-grid">
+                <div class="tip-card">
+                    <span class="tip-icon">&#127919;</span>
+                    <p class="tip-text">{{ t.tip1 }}</p>
+                </div>
+                <div class="tip-card">
+                    <span class="tip-icon">&#128202;</span>
+                    <p class="tip-text">{{ t.tip2 }}</p>
+                </div>
+                <div class="tip-card">
+                    <span class="tip-icon">&#127912;</span>
+                    <p class="tip-text">{{ t.tip3 }}</p>
+                </div>
+                <div class="tip-card">
+                    <span class="tip-icon">&#9889;</span>
+                    <p class="tip-text">{{ t.tip4 }}</p>
+                </div>
+            </div>
+
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="stat-number">50K+</div>
+                    <div class="stat-label">{{ t.pres_created }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">10K+</div>
+                    <div class="stat-label">{{ t.happy_users }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">98%</div>
+                    <div class="stat-label">{{ t.satisfaction }}</div>
+                </div>
+            </div>
+
+            <div class="dashboard-footer">
+                <div class="footer-social">
+                    <h3>{{ t.social_title }}</h3>
+                    <div class="social-links">
+                        <a href="https://instagram.com/mirzoulugbek.fazilov" target="_blank" rel="noopener noreferrer" class="social-link">Instagram</a>
+                        <a href="https://t.me/MirzoUlugbek_Diary" target="_blank" rel="noopener noreferrer" class="social-link">Telegram</a>
+                        <a href="https://tiktok.com/@mirzoulugbek.fazilov" target="_blank" rel="noopener noreferrer" class="social-link">TikTok</a>
+                        <a href="https://www.linkedin.com/in/mirzo-ulugbek-fazilov-a90b9a309/" target="_blank" rel="noopener noreferrer" class="social-link">LinkedIn</a>
+                    </div>
+                </div>
+                <p class="footer-copyright">&copy; 2026 PresentAI. {{ t.copyright }}</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const userPrompt = document.getElementById('userPrompt');
+        const charCount = document.getElementById('charCount');
+        userPrompt.addEventListener('input', () => {
+            charCount.textContent = userPrompt.value.length;
+        });
+        userPrompt.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 300) + 'px';
+        });
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+
+        // Loading animation system
+        const overlay = document.getElementById('loadingOverlay');
+        const progressBar = document.getElementById('progressBar');
+        const progressPercent = document.getElementById('progressPercent');
+        const progressLabel = document.getElementById('progressLabel');
+        const loadingError = document.getElementById('loadingError');
+        const loadingClose = document.getElementById('loadingClose');
+        const completedText = "{{ t.loading_completed }}";
+
+        // Simulated percentage timeline (seconds → percent)
+        const timeline = [
+            { at: 0, pct: 3 },
+            { at: 2, pct: 8 },
+            { at: 5, pct: 15 },
+            { at: 8, pct: 22 },
+            { at: 12, pct: 30 },
+            { at: 16, pct: 38 },
+            { at: 20, pct: 45 },
+            { at: 25, pct: 52 },
+            { at: 30, pct: 58 },
+            { at: 36, pct: 64 },
+            { at: 42, pct: 70 },
+            { at: 48, pct: 75 },
+            { at: 54, pct: 80 },
+            { at: 60, pct: 84 },
+            { at: 68, pct: 88 },
+            { at: 76, pct: 91 },
+            { at: 85, pct: 93 },
+            { at: 95, pct: 95 },
+        ];
+
+        let progressTimers = [];
+
+        function setProgress(pct) {
+            progressBar.style.width = pct + '%';
+            progressPercent.textContent = pct + '%';
+            progressLabel.textContent = pct + '% ' + completedText;
+        }
+
+        function showLoading() {
+            overlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            setProgress(0);
+            loadingError.classList.remove('show');
+            loadingError.textContent = '';
+            loadingClose.classList.remove('show');
+
+            timeline.forEach(t => {
+                const timer = setTimeout(() => setProgress(t.pct), t.at * 1000);
+                progressTimers.push(timer);
+            });
+        }
+
+        function finishLoading() {
+            progressTimers.forEach(clearTimeout);
+            progressTimers = [];
+            setProgress(100);
+            setTimeout(() => hideLoading(), 800);
+        }
+
+        function showLoadingError(msg) {
+            progressTimers.forEach(clearTimeout);
+            progressTimers = [];
+            loadingError.textContent = msg;
+            loadingError.classList.add('show');
+            loadingClose.classList.add('show');
+        }
+
+        function hideLoading() {
+            overlay.classList.remove('active');
+            document.body.style.overflow = '';
+            progressTimers.forEach(clearTimeout);
+            progressTimers = [];
+        }
+
+        // AJAX form submission
+        document.getElementById('generateForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const prompt = userPrompt.value.trim();
+            if (!prompt) return;
+
+            showLoading();
+
+            try {
+                const formData = new FormData();
+                formData.append('user_prompt', prompt);
+
+                const response = await fetch('/generate_ppt', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    let msg = 'Generation failed. Please try again.';
+                    try {
+                        const errData = await response.json();
+                        if (errData.error) msg = errData.error;
+                    } catch(_) {
+                        const text = await response.text();
+                        if (text) msg = text;
+                    }
+                    throw new Error(msg);
+                }
+
+                // Get the file blob and trigger download
+                const blob = await response.blob();
+                const disposition = response.headers.get('Content-Disposition') || '';
+                let filename = 'presentation.pptx';
+                const match = disposition.match(/filename\*?=(?:UTF-8''|")?(.*?)(?:"|;|$)/i);
+                if (match) filename = decodeURIComponent(match[1]);
+
+                // Complete the progress
+                finishLoading();
+
+                // Trigger download
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } catch (err) {
+                showLoadingError(err.message || 'Something went wrong. Please try again.');
+            }
+        });
+    </script>
+</body>
+</html>

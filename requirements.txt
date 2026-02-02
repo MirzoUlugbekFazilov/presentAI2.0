@@ -1,0 +1,10 @@
+flask
+mysql-connector-python
+python-dotenv
+openai
+python-pptx
+requests
+transformers
+torch
+accelerate
+authlib
