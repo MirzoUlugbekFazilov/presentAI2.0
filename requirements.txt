@@ -4,7 +4,9 @@ python-dotenv
 openai
 python-pptx
 requests
-transformers
-torch
-accelerate
 authlib
+
+# ML (CPU-only)
+torch==2.2.2+cpu
+transformers
+accelerate
