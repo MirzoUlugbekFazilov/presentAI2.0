@@ -6,7 +6,6 @@ python-pptx
 requests
 authlib
 
-# ML (CPU-only)
-torch==2.2.2+cpu
+torch==2.2.2
 transformers
 accelerate
