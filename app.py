@@ -1923,6 +1923,11 @@ def generate_ppt():
         mimetype="application/vnd.openxmlformats-officedocument.presentationml.presentation"
     )
 
+# ------------------ Health Check ------------------
+@app.route("/health")
+def health_check():
+    return jsonify({"status": "ok"}), 200
+
 # ------------------ Auth Pages ------------------
 @app.route("/")
 def home():
