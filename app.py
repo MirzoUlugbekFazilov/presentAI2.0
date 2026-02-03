@@ -1834,9 +1834,8 @@ def generate_ppt():
 
     buf = BytesIO()
     prs.save(buf)
-    buf.seek(0)
 
-    # Save to history
+    # Save to history using getvalue() (doesn't move the pointer)
     file_bytes = buf.getvalue()
     try:
         db, cursor = get_db()
@@ -1848,9 +1847,10 @@ def generate_ppt():
     except Exception:
         pass  # Don't block download if history save fails
 
-    buf.seek(0)
+    # Create a FRESH BytesIO from the saved bytes for send_file
+    download_buf = BytesIO(file_bytes)
     return send_file(
-        buf,
+        download_buf,
         as_attachment=True,
         download_name=f"{filename}.pptx",
         mimetype="application/vnd.openxmlformats-officedocument.presentationml.presentation"
