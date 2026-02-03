@@ -930,6 +930,23 @@
             e.preventDefault();
             const prompt = userPrompt.value.trim();
             if (!prompt) return;
+        
+            showLoading();
+        
+            try {
+                const formData = new FormData();
+                formData.append('user_prompt', prompt);
+        
+                const response = await fetch('/generate_ppt', {
+                    method: 'POST',
+                    body: formData
+                });
+        
+        
+        document.getElementById('generateForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const prompt = userPrompt.value.trim();
+            if (!prompt) return;
 
             showLoading();
 
