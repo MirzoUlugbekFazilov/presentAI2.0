@@ -2021,13 +2021,28 @@ def download_presentation(pres_id):
     row = cursor.fetchone()
     if not row:
         return redirect("/history")
-    buf = BytesIO(row[1])
-    buf.seek(0)
+    buf = BytesIO()
+    prs.save(buf)
+
+    # Save to history using getvalue() (doesn't move the pointer)
+    file_bytes = buf.getvalue()
+    try:
+        db, cursor = get_db()
+        cursor.execute(
+            "INSERT INTO presentations (user_email, title, filename, file_data) VALUES (%s, %s, %s, %s)",
+            (session.get("email", ""), raw_title, f"{filename}.pptx", file_bytes),
+        )
+        db.commit()
+    except Exception:
+        pass  # Don't block download if history save fails
+
+    # Create a FRESH BytesIO from the saved bytes for send_file
+    download_buf = BytesIO(file_bytes)
     return send_file(
-        buf,
+        download_buf,
         as_attachment=True,
-        download_name=row[0],
-        mimetype="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        download_name=f"{filename}.pptx",
+        mimetype="application/vnd.openxmlformats-officedocument.presentationml.presentation"
     )
 
 @app.route("/delete-account", methods=["POST"])
