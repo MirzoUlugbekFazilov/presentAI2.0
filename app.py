@@ -1754,6 +1754,53 @@ def slide_10_closing_cta(prs, data):
 
 # ======================== GENERATE PPT ========================
 
+def _get_default_slide(slide_num, topic):
+    """Return default slide data when AI content is missing."""
+    defaults = {
+        2: {"title": "Overview", "cards": [
+            {"title": "Key Point 1", "bullets": ["Important detail", "Supporting info"]},
+            {"title": "Key Point 2", "bullets": ["Important detail", "Supporting info"]},
+            {"title": "Key Point 3", "bullets": ["Important detail", "Supporting info"]}
+        ]},
+        3: {"title": "Key Concepts", "cards": [
+            {"title": "Concept 1", "bullets": ["Detail 1", "Detail 2"]},
+            {"title": "Concept 2", "bullets": ["Detail 1", "Detail 2"]},
+            {"title": "Concept 3", "bullets": ["Detail 1", "Detail 2"]}
+        ]},
+        4: {"title": "Deep Dive", "image_prompt": "", "bullets": ["Point 1", "Point 2", "Point 3", "Point 4"]},
+        5: {"title": "Key Statistics", "cards": [
+            {"title": "Stat 1", "bullets": ["Detail"]},
+            {"title": "Stat 2", "bullets": ["Detail"]},
+            {"title": "Stat 3", "bullets": ["Detail"]},
+            {"title": "Stat 4", "bullets": ["Detail"]}
+        ]},
+        6: {"title": "Analysis", "image_prompt": "", "stat_number": "100%", "stat_label": "Key metric", "bullets": ["Point 1", "Point 2", "Point 3"], "cards": [
+            {"title": "Item 1", "bullets": ["Detail"]},
+            {"title": "Item 2", "bullets": ["Detail"]}
+        ]},
+        7: {"title": "Comparison", "cards": [
+            {"title": "Option A", "bullets": ["Feature 1", "Feature 2", "Feature 3"]},
+            {"title": "Option B", "bullets": ["Feature 1", "Feature 2", "Feature 3"]}
+        ], "rows": [
+            {"label": "Feature", "values": ["Value A", "Value B"]},
+            {"label": "Feature", "values": ["Value A", "Value B"]}
+        ]},
+        8: {"title": "Process", "steps": [
+            {"title": "Step 1", "bullets": ["Detail 1", "Detail 2"]},
+            {"title": "Step 2", "bullets": ["Detail 1", "Detail 2"]},
+            {"title": "Step 3", "bullets": ["Detail 1", "Detail 2"]},
+            {"title": "Step 4", "bullets": ["Detail 1", "Detail 2"]}
+        ]},
+        9: {"title": "Key Insight", "image_prompt": "", "stat_number": "90%", "stat_label": "Success rate", "quote": "Important quote here", "bullets": ["Point 1", "Point 2", "Point 3", "Point 4"]},
+        10: {"title": "Take Action", "cards": [
+            {"title": "Next Step 1", "bullets": ["Action item 1", "Action item 2"]},
+            {"title": "Next Step 2", "bullets": ["Action item 1", "Action item 2"]},
+            {"title": "Next Step 3", "bullets": ["Action item 1", "Action item 2"]}
+        ]}
+    }
+    return defaults.get(slide_num, {"title": topic, "bullets": ["Content"], "cards": []})
+
+
 @app.route("/generate_ppt", methods=["POST"])
 def generate_ppt():
     if "user" not in session:
@@ -1775,62 +1822,82 @@ def generate_ppt():
     prs.slide_width = Inches(SW)
     prs.slide_height = Inches(SH)
 
-    slides = {s["slide"]: s for s in content.get("slides", [])}
+    slides_list = content.get("slides", [])
+    slides = {}
+    for s in slides_list:
+        if isinstance(s, dict) and "slide" in s:
+            slides[s["slide"]] = s
+
+    # Ensure all slides 2-10 exist with defaults if missing
+    for i in range(2, 11):
+        if i not in slides:
+            print(f"[PresentAI] Warning: Slide {i} missing, using default")
+            slides[i] = _get_default_slide(i, user_prompt)
+
     designs = content.get("slide_designs", {})
 
-    # Generate 4 images: slide 1 (portrait), slides 4, 6, 9 (square)
-    images = {}
-    title_img_prompt = content.get("title_image_prompt", "")
-    if title_img_prompt:
-        images[1] = generate_image(title_img_prompt, img_w=768, img_h=1152)
-    for sn in [4, 6, 9]:
-        prompt = slides.get(sn, {}).get("image_prompt", "")
-        if prompt:
-            images[sn] = generate_image(prompt)
+    try:
+        # Generate 4 images: slide 1 (portrait), slides 4, 6, 9 (square)
+        images = {}
+        title_img_prompt = content.get("title_image_prompt", "")
+        if title_img_prompt:
+            images[1] = generate_image(title_img_prompt, img_w=768, img_h=1152)
+        for sn in [4, 6, 9]:
+            prompt = slides.get(sn, {}).get("image_prompt", "")
+            if prompt:
+                images[sn] = generate_image(prompt)
 
-    slide_1_hero_title(prs, raw_title, subtitle, images.get(1))
+        slide_1_hero_title(prs, raw_title, subtitle, images.get(1))
 
-    if designs.get("2", "A") == "B":
-        slide_2b_left_accent_cards(prs, slides[2])
-    else:
-        slide_2a_dot_badge_rows(prs, slides[2])
+        if designs.get("2", "A") == "B":
+            slide_2b_left_accent_cards(prs, slides[2])
+        else:
+            slide_2a_dot_badge_rows(prs, slides[2])
 
-    if designs.get("3", "A") == "B":
-        slide_3b_four_cards_row(prs, slides[3])
-    else:
-        slide_3a_three_cards_row(prs, slides[3])
+        if designs.get("3", "A") == "B":
+            slide_3b_four_cards_row(prs, slides[3])
+        else:
+            slide_3a_three_cards_row(prs, slides[3])
 
-    if designs.get("4", "A") == "B":
-        slide_4b_bullets_image_right(prs, slides[4], images.get(4))
-    else:
-        slide_4a_image_left_bullets(prs, slides[4], images.get(4))
+        if designs.get("4", "A") == "B":
+            slide_4b_bullets_image_right(prs, slides[4], images.get(4))
+        else:
+            slide_4a_image_left_bullets(prs, slides[4], images.get(4))
 
-    if designs.get("5", "A") == "B":
-        slide_5b_stat_columns(prs, slides[5])
-    else:
-        slide_5a_grid_badges(prs, slides[5])
+        if designs.get("5", "A") == "B":
+            slide_5b_stat_columns(prs, slides[5])
+        else:
+            slide_5a_grid_badges(prs, slides[5])
 
-    if designs.get("6", "A") == "B":
-        slide_6b_cards_banner(prs, slides[6], images.get(6))
-    else:
-        slide_6a_bullets_banner(prs, slides[6], images.get(6))
+        if designs.get("6", "A") == "B":
+            slide_6b_cards_banner(prs, slides[6], images.get(6))
+        else:
+            slide_6a_bullets_banner(prs, slides[6], images.get(6))
 
-    if designs.get("7", "A") == "B":
-        slide_7b_grid_table(prs, slides[7])
-    else:
-        slide_7a_two_cards(prs, slides[7])
+        if designs.get("7", "A") == "B":
+            slide_7b_grid_table(prs, slides[7])
+        else:
+            slide_7a_two_cards(prs, slides[7])
 
-    if designs.get("8", "A") == "B":
-        slide_8b_step_cards(prs, slides[8])
-    else:
-        slide_8a_timeline(prs, slides[8])
+        if designs.get("8", "A") == "B":
+            slide_8b_step_cards(prs, slides[8])
+        else:
+            slide_8a_timeline(prs, slides[8])
 
-    if designs.get("9", "A") == "B":
-        slide_9b_quote_image(prs, slides[9], images.get(9))
-    else:
-        slide_9a_stat_image(prs, slides[9], images.get(9))
+        if designs.get("9", "A") == "B":
+            slide_9b_quote_image(prs, slides[9], images.get(9))
+        else:
+            slide_9a_stat_image(prs, slides[9], images.get(9))
 
-    slide_10_closing_cta(prs, slides[10])
+        slide_10_closing_cta(prs, slides[10])
+    except KeyError as e:
+        print(f"[PresentAI] Missing slide data key: {e}")
+        traceback.print_exc()
+        return jsonify({"error": "Failed to build presentation. Missing data from AI. Please try again."}), 500
+    except Exception as e:
+        print(f"[PresentAI] Error building slides: {e}")
+        traceback.print_exc()
+        return jsonify({"error": "Failed to build presentation. Please try again."}), 500
 
     buf = BytesIO()
     prs.save(buf)
