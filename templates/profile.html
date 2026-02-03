@@ -169,6 +169,36 @@
             padding: 8px;
         }
 
+        /* Hamburger */
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            cursor: pointer;
+            padding: 10px;
+            z-index: 10;
+        }
+
+        .hamburger span {
+            width: 25px;
+            height: 3px;
+            background: #a78bfa;
+            border-radius: 3px;
+            transition: all 0.3s;
+        }
+
+        .hamburger.active span:nth-child(1) {
+            transform: rotate(45deg) translate(6px, 6px);
+        }
+
+        .hamburger.active span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .hamburger.active span:nth-child(3) {
+            transform: rotate(-45deg) translate(6px, -6px);
+        }
+
         /* Profile content */
         .profile-content {
             padding: 48px 40px;
@@ -182,6 +212,7 @@
             color: #f4f4f5;
             margin-bottom: 32px;
             letter-spacing: -0.5px;
+            text-align: center;
         }
 
         .profile-avatar {
@@ -195,7 +226,7 @@
             color: white;
             font-size: 32px;
             font-weight: 700;
-            margin-bottom: 32px;
+            margin: 0 auto 32px;
         }
 
         .profile-card {
@@ -240,6 +271,7 @@
             font-weight: 700;
             color: #f87171;
             margin-bottom: 16px;
+            text-align: center;
         }
 
         .danger-card {
@@ -405,6 +437,10 @@
                 display: block;
             }
 
+            .hamburger {
+                display: flex;
+            }
+
             .profile-content {
                 padding: 32px 20px;
             }
@@ -423,6 +459,63 @@
             .danger-card-content {
                 flex-direction: column;
                 align-items: flex-start;
+            }
+
+            .topbar {
+                padding: 12px 16px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .profile-content {
+                padding: 24px 14px;
+            }
+
+            .profile-content h1 {
+                font-size: 22px;
+            }
+
+            .profile-avatar {
+                width: 64px;
+                height: 64px;
+                font-size: 26px;
+            }
+
+            .profile-row {
+                padding: 14px 16px;
+            }
+
+            .profile-label {
+                font-size: 12px;
+            }
+
+            .profile-value {
+                font-size: 14px;
+            }
+
+            .danger-card {
+                padding: 20px;
+            }
+
+            .delete-btn {
+                width: 100%;
+                text-align: center;
+            }
+
+            .topbar {
+                padding: 10px 14px;
+            }
+
+            .topbar-greeting {
+                font-size: 13px;
+            }
+
+            .modal {
+                padding: 28px 24px;
+            }
+
+            .modal-actions {
+                flex-direction: column;
             }
         }
 
@@ -482,11 +575,11 @@
     <!-- Main Content -->
     <div class="main-content">
         <div class="topbar">
-            <button class="mobile-toggle" onclick="toggleSidebar()">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
-                </svg>
-            </button>
+            <div class="hamburger" id="hamburger" onclick="toggleSidebar()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
             <div class="topbar-greeting">{{ t.welcome }}, <strong>{{ user }}</strong></div>
             <div></div>
         </div>
@@ -560,6 +653,7 @@
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('open');
             document.getElementById('sidebarOverlay').classList.toggle('active');
+            document.getElementById('hamburger').classList.toggle('active');
         }
 
         function showDeleteModal() {
