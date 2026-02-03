@@ -36,8 +36,16 @@ DB_ERROR_PAGE = (
 )
 
 # ------------------ OpenAI ------------------
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+client = None
+if OPENAI_API_KEY:
+    client = OpenAI(api_key=OPENAI_API_KEY)
+else:
+    print("[PresentAI] WARNING: OPENAI_API_KEY not set - content generation will fail")
+
 HF_API_KEY = os.getenv("HF_API_KEY", "")
+if not HF_API_KEY:
+    print("[PresentAI] WARNING: HF_API_KEY not set - image generation will be skipped")
 
 # ------------------ Google OAuth Setup ------------------
 oauth = OAuth(app)
@@ -767,6 +775,10 @@ Rules:
 
 
 def generate_slide_content(prompt):
+    if client is None:
+        print("[PresentAI] ERROR: OpenAI client not initialized - check OPENAI_API_KEY")
+        return None
+
     for attempt in range(2):
         try:
             r = client.chat.completions.create(
@@ -1811,30 +1823,63 @@ def _normalize_slide_data(slide_num, data, designs):
     if "title" not in data:
         data["title"] = defaults.get("title", "Slide Title")
 
-    # Ensure bullets exist
-    if "bullets" not in data:
+    # Ensure bullets exist and is a list
+    if "bullets" not in data or not isinstance(data["bullets"], list):
         data["bullets"] = defaults.get("bullets", ["Point 1", "Point 2"])
 
-    # Ensure cards exist
-    if "cards" not in data:
+    # Ensure cards exist and is a list
+    if "cards" not in data or not isinstance(data["cards"], list):
         data["cards"] = defaults.get("cards", [])
+
+    # Normalize each card to ensure it has title and bullets
+    normalized_cards = []
+    for i, card in enumerate(data["cards"]):
+        if not isinstance(card, dict):
+            card = {"title": f"Card {i+1}", "bullets": ["Detail"]}
+        if "title" not in card:
+            card["title"] = f"Card {i+1}"
+        if "bullets" not in card or not isinstance(card["bullets"], list):
+            card["bullets"] = ["Detail"]
+        normalized_cards.append(card)
+    data["cards"] = normalized_cards
 
     # Slide 7 specific: ensure left/right exist for variant B
     if slide_num == 7:
-        if "left" not in data:
+        if "left" not in data or not isinstance(data["left"], dict):
             if data.get("cards") and len(data["cards"]) >= 1:
                 data["left"] = data["cards"][0]
             else:
-                data["left"] = defaults["left"]
-        if "right" not in data:
+                data["left"] = defaults.get("left", {"title": "Option A", "bullets": ["Feature 1", "Feature 2"]})
+        if "right" not in data or not isinstance(data["right"], dict):
             if data.get("cards") and len(data["cards"]) >= 2:
                 data["right"] = data["cards"][1]
             else:
-                data["right"] = defaults["right"]
+                data["right"] = defaults.get("right", {"title": "Option B", "bullets": ["Feature 1", "Feature 2"]})
+        # Ensure left and right have title and bullets
+        if "title" not in data["left"]:
+            data["left"]["title"] = "Option A"
+        if "bullets" not in data["left"] or not isinstance(data["left"]["bullets"], list):
+            data["left"]["bullets"] = ["Feature 1", "Feature 2"]
+        if "title" not in data["right"]:
+            data["right"]["title"] = "Option B"
+        if "bullets" not in data["right"] or not isinstance(data["right"]["bullets"], list):
+            data["right"]["bullets"] = ["Feature 1", "Feature 2"]
 
-    # Slide 8 specific: ensure steps exist
-    if slide_num == 8 and "steps" not in data:
-        data["steps"] = defaults.get("steps", [])
+    # Slide 8 specific: ensure steps exist and normalize them
+    if slide_num == 8:
+        if "steps" not in data or not isinstance(data["steps"], list):
+            data["steps"] = defaults.get("steps", [])
+        # Normalize each step to ensure it has title and bullets
+        normalized_steps = []
+        for i, step in enumerate(data["steps"]):
+            if not isinstance(step, dict):
+                step = {"title": f"Step {i+1}", "bullets": ["Detail"]}
+            if "title" not in step:
+                step["title"] = f"Step {i+1}"
+            if "bullets" not in step or not isinstance(step["bullets"], list):
+                step["bullets"] = ["Detail"]
+            normalized_steps.append(step)
+        data["steps"] = normalized_steps
 
     # Slide 9 specific: ensure stat fields and quote exist
     if slide_num == 9:
@@ -1860,39 +1905,45 @@ def generate_ppt():
     if "user" not in session:
         return redirect("/login")
 
-    user_prompt = request.form["user_prompt"]
-
-    content = generate_slide_content(user_prompt)
-    if content is None:
-        return jsonify({"error": "Failed to generate presentation content. Please try again."}), 500
-
-    raw_title = content.get("title", user_prompt)
-    subtitle = content.get("subtitle", "")
-    filename = safe_filename(raw_title)
-
-    apply_theme(content.get("theme", "indigo"))
-
-    prs = Presentation()
-    prs.slide_width = Inches(SW)
-    prs.slide_height = Inches(SH)
-
-    slides_list = content.get("slides", [])
-    slides = {}
-    for s in slides_list:
-        if isinstance(s, dict) and "slide" in s:
-            slides[s["slide"]] = s
-
-    designs = content.get("slide_designs", {})
-
-    # Ensure all slides 2-10 exist with defaults if missing, then normalize
-    for i in range(2, 11):
-        if i not in slides:
-            print(f"[PresentAI] Warning: Slide {i} missing, using default")
-            slides[i] = _get_default_slide(i, user_prompt)
-        # Normalize the slide data to ensure all required keys exist
-        slides[i] = _normalize_slide_data(i, slides[i], designs)
-
     try:
+        user_prompt = request.form.get("user_prompt", "").strip()
+        if not user_prompt:
+            return jsonify({"error": "Please enter a topic for your presentation."}), 400
+
+        content = generate_slide_content(user_prompt)
+        if content is None:
+            return jsonify({"error": "Failed to generate presentation content. Please try again."}), 500
+
+        raw_title = content.get("title", user_prompt)
+        subtitle = content.get("subtitle", "")
+        filename = safe_filename(raw_title)
+
+        apply_theme(content.get("theme", "indigo"))
+
+        prs = Presentation()
+        prs.slide_width = Inches(SW)
+        prs.slide_height = Inches(SH)
+
+        slides_list = content.get("slides", [])
+        if not isinstance(slides_list, list):
+            slides_list = []
+
+        slides = {}
+        for s in slides_list:
+            if isinstance(s, dict) and "slide" in s:
+                slides[s["slide"]] = s
+
+        designs = content.get("slide_designs", {})
+        if not isinstance(designs, dict):
+            designs = {}
+
+        # Ensure all slides 2-10 exist with defaults if missing, then normalize
+        for i in range(2, 11):
+            if i not in slides:
+                print(f"[PresentAI] Warning: Slide {i} missing, using default")
+                slides[i] = _get_default_slide(i, user_prompt)
+            # Normalize the slide data to ensure all required keys exist
+            slides[i] = _normalize_slide_data(i, slides[i], designs)
         # Generate 4 images: slide 1 (portrait), slides 4, 6, 9 (square)
         images = {}
         title_img_prompt = content.get("title_image_prompt", "")
@@ -1946,38 +1997,51 @@ def generate_ppt():
             slide_9a_stat_image(prs, slides[9], images.get(9))
 
         slide_10_closing_cta(prs, slides[10])
+        buf = BytesIO()
+        prs.save(buf)
+
+        # Save to history using getvalue() (doesn't move the pointer)
+        file_bytes = buf.getvalue()
+        try:
+            db, cursor = get_db()
+            if db and cursor:
+                cursor.execute(
+                    "INSERT INTO presentations (user_email, title, filename, file_data) VALUES (%s, %s, %s, %s)",
+                    (session.get("email", ""), raw_title, f"{filename}.pptx", file_bytes),
+                )
+                db.commit()
+        except Exception as db_err:
+            print(f"[PresentAI] History save failed (non-blocking): {db_err}")
+            pass  # Don't block download if history save fails
+
+        # Create a FRESH BytesIO from the saved bytes for send_file
+        download_buf = BytesIO(file_bytes)
+        return send_file(
+            download_buf,
+            as_attachment=True,
+            download_name=f"{filename}.pptx",
+            mimetype="application/vnd.openxmlformats-officedocument.presentationml.presentation"
+        )
+
     except KeyError as e:
         print(f"[PresentAI] Missing slide data key: {e}")
         traceback.print_exc()
         return jsonify({"error": "Failed to build presentation. Missing data from AI. Please try again."}), 500
     except Exception as e:
-        print(f"[PresentAI] Error building slides: {e}")
+        print(f"[PresentAI] Error in generate_ppt: {e}")
         traceback.print_exc()
-        return jsonify({"error": "Failed to build presentation. Please try again."}), 500
+        return jsonify({"error": "Failed to generate presentation. Please try again."}), 500
 
-    buf = BytesIO()
-    prs.save(buf)
+# ------------------ Error Handlers ------------------
+@app.errorhandler(500)
+def handle_500_error(e):
+    print(f"[PresentAI] Internal Server Error: {e}")
+    traceback.print_exc()
+    return jsonify({"error": "Internal server error. Please try again."}), 500
 
-    # Save to history using getvalue() (doesn't move the pointer)
-    file_bytes = buf.getvalue()
-    try:
-        db, cursor = get_db()
-        cursor.execute(
-            "INSERT INTO presentations (user_email, title, filename, file_data) VALUES (%s, %s, %s, %s)",
-            (session.get("email", ""), raw_title, f"{filename}.pptx", file_bytes),
-        )
-        db.commit()
-    except Exception:
-        pass  # Don't block download if history save fails
-
-    # Create a FRESH BytesIO from the saved bytes for send_file
-    download_buf = BytesIO(file_bytes)
-    return send_file(
-        download_buf,
-        as_attachment=True,
-        download_name=f"{filename}.pptx",
-        mimetype="application/vnd.openxmlformats-officedocument.presentationml.presentation"
-    )
+@app.errorhandler(404)
+def handle_404_error(e):
+    return jsonify({"error": "Resource not found."}), 404
 
 # ------------------ Health Check ------------------
 @app.route("/health")
