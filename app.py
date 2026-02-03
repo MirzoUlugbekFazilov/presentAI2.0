@@ -1765,40 +1765,94 @@ def _get_default_slide(slide_num, topic):
         3: {"title": "Key Concepts", "cards": [
             {"title": "Concept 1", "bullets": ["Detail 1", "Detail 2"]},
             {"title": "Concept 2", "bullets": ["Detail 1", "Detail 2"]},
-            {"title": "Concept 3", "bullets": ["Detail 1", "Detail 2"]}
+            {"title": "Concept 3", "bullets": ["Detail 1", "Detail 2"]},
+            {"title": "Concept 4", "bullets": ["Detail 1", "Detail 2"]}
         ]},
         4: {"title": "Deep Dive", "image_prompt": "", "bullets": ["Point 1", "Point 2", "Point 3", "Point 4"]},
         5: {"title": "Key Statistics", "cards": [
-            {"title": "Stat 1", "bullets": ["Detail"]},
-            {"title": "Stat 2", "bullets": ["Detail"]},
-            {"title": "Stat 3", "bullets": ["Detail"]},
-            {"title": "Stat 4", "bullets": ["Detail"]}
+            {"title": "50%", "bullets": ["Key metric detail"]},
+            {"title": "100+", "bullets": ["Another metric"]},
+            {"title": "99%", "bullets": ["Success rate"]},
+            {"title": "24/7", "bullets": ["Availability"]}
         ]},
         6: {"title": "Analysis", "image_prompt": "", "stat_number": "100%", "stat_label": "Key metric", "bullets": ["Point 1", "Point 2", "Point 3"], "cards": [
             {"title": "Item 1", "bullets": ["Detail"]},
             {"title": "Item 2", "bullets": ["Detail"]}
         ]},
-        7: {"title": "Comparison", "cards": [
-            {"title": "Option A", "bullets": ["Feature 1", "Feature 2", "Feature 3"]},
-            {"title": "Option B", "bullets": ["Feature 1", "Feature 2", "Feature 3"]}
-        ], "rows": [
-            {"label": "Feature", "values": ["Value A", "Value B"]},
-            {"label": "Feature", "values": ["Value A", "Value B"]}
-        ]},
+        7: {"title": "Comparison",
+            "cards": [
+                {"title": "Option A", "bullets": ["Feature 1", "Feature 2", "Feature 3"]},
+                {"title": "Option B", "bullets": ["Feature 1", "Feature 2", "Feature 3"]}
+            ],
+            "left": {"title": "Option A", "bullets": ["Feature 1", "Feature 2", "Feature 3"]},
+            "right": {"title": "Option B", "bullets": ["Feature 1", "Feature 2", "Feature 3"]}
+        },
         8: {"title": "Process", "steps": [
             {"title": "Step 1", "bullets": ["Detail 1", "Detail 2"]},
             {"title": "Step 2", "bullets": ["Detail 1", "Detail 2"]},
             {"title": "Step 3", "bullets": ["Detail 1", "Detail 2"]},
             {"title": "Step 4", "bullets": ["Detail 1", "Detail 2"]}
         ]},
-        9: {"title": "Key Insight", "image_prompt": "", "stat_number": "90%", "stat_label": "Success rate", "quote": "Important quote here", "bullets": ["Point 1", "Point 2", "Point 3", "Point 4"]},
+        9: {"title": "Key Insight", "image_prompt": "", "stat_number": "90%", "stat_label": "Success rate", "quote": "Key insight quote here", "bullets": ["Point 1", "Point 2", "Point 3", "Point 4"]},
         10: {"title": "Take Action", "cards": [
-            {"title": "Next Step 1", "bullets": ["Action item 1", "Action item 2"]},
-            {"title": "Next Step 2", "bullets": ["Action item 1", "Action item 2"]},
-            {"title": "Next Step 3", "bullets": ["Action item 1", "Action item 2"]}
+            {"title": "Next Step 1", "bullets": ["Action item 1", "Action item 2", "Action item 3"]},
+            {"title": "Next Step 2", "bullets": ["Action item 1", "Action item 2", "Action item 3"]},
+            {"title": "Next Step 3", "bullets": ["Action item 1", "Action item 2", "Action item 3"]}
         ]}
     }
     return defaults.get(slide_num, {"title": topic, "bullets": ["Content"], "cards": []})
+
+
+def _normalize_slide_data(slide_num, data, designs):
+    """Ensure slide data has all required keys for the chosen design variant."""
+    defaults = _get_default_slide(slide_num, "Topic")
+
+    # Ensure title exists
+    if "title" not in data:
+        data["title"] = defaults.get("title", "Slide Title")
+
+    # Ensure bullets exist
+    if "bullets" not in data:
+        data["bullets"] = defaults.get("bullets", ["Point 1", "Point 2"])
+
+    # Ensure cards exist
+    if "cards" not in data:
+        data["cards"] = defaults.get("cards", [])
+
+    # Slide 7 specific: ensure left/right exist for variant B
+    if slide_num == 7:
+        if "left" not in data:
+            if data.get("cards") and len(data["cards"]) >= 1:
+                data["left"] = data["cards"][0]
+            else:
+                data["left"] = defaults["left"]
+        if "right" not in data:
+            if data.get("cards") and len(data["cards"]) >= 2:
+                data["right"] = data["cards"][1]
+            else:
+                data["right"] = defaults["right"]
+
+    # Slide 8 specific: ensure steps exist
+    if slide_num == 8 and "steps" not in data:
+        data["steps"] = defaults.get("steps", [])
+
+    # Slide 9 specific: ensure stat fields and quote exist
+    if slide_num == 9:
+        if "stat_number" not in data:
+            data["stat_number"] = defaults.get("stat_number", "90%")
+        if "stat_label" not in data:
+            data["stat_label"] = defaults.get("stat_label", "Success rate")
+        if "quote" not in data:
+            data["quote"] = defaults.get("quote", "Key insight")
+
+    # Slide 6 specific: ensure stat fields exist
+    if slide_num == 6:
+        if "stat_number" not in data:
+            data["stat_number"] = defaults.get("stat_number", "100%")
+        if "stat_label" not in data:
+            data["stat_label"] = defaults.get("stat_label", "Key metric")
+
+    return data
 
 
 @app.route("/generate_ppt", methods=["POST"])
@@ -1828,13 +1882,15 @@ def generate_ppt():
         if isinstance(s, dict) and "slide" in s:
             slides[s["slide"]] = s
 
-    # Ensure all slides 2-10 exist with defaults if missing
+    designs = content.get("slide_designs", {})
+
+    # Ensure all slides 2-10 exist with defaults if missing, then normalize
     for i in range(2, 11):
         if i not in slides:
             print(f"[PresentAI] Warning: Slide {i} missing, using default")
             slides[i] = _get_default_slide(i, user_prompt)
-
-    designs = content.get("slide_designs", {})
+        # Normalize the slide data to ensure all required keys exist
+        slides[i] = _normalize_slide_data(i, slides[i], designs)
 
     try:
         # Generate 4 images: slide 1 (portrait), slides 4, 6, 9 (square)
