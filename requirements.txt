@@ -6,3 +6,4 @@ python-pptx
 requests
 authlib
 gunicorn
+werkzeug
