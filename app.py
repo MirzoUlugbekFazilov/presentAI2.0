@@ -19,6 +19,9 @@ from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from authlib.integrations.flask_client import OAuth
 
+# ------------------ Load ENV ------------------
+load_dotenv()
+
 # ------------------ Initialize Flask ------------------
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "supersecretkey")
@@ -31,9 +34,6 @@ DB_ERROR_PAGE = (
     "<p style='color:#d1d5db;margin-bottom:24px;'>Database connection failed.</p>"
     "<a href='/' style='color:#a78bfa;'>Try again</a></div>"
 )
-
-# ------------------ Load ENV ------------------
-load_dotenv()
 
 # ------------------ OpenAI ------------------
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -2057,5 +2057,6 @@ def logout():
 
 # ------------------ Run ------------------
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8080))
-    app.run(host="0.0.0.0", port=port)
+    port = int(os.getenv("PORT", 8000))
+    debug = os.getenv("FLASK_DEBUG", "false").lower() == "true"
+    app.run(debug=debug, host="0.0.0.0", port=port)
