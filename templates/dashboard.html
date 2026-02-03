@@ -188,6 +188,36 @@
             padding: 8px;
         }
 
+        /* Hamburger */
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            cursor: pointer;
+            padding: 10px;
+            z-index: 10;
+        }
+
+        .hamburger span {
+            width: 25px;
+            height: 3px;
+            background: #a78bfa;
+            border-radius: 3px;
+            transition: all 0.3s;
+        }
+
+        .hamburger.active span:nth-child(1) {
+            transform: rotate(45deg) translate(6px, 6px);
+        }
+
+        .hamburger.active span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .hamburger.active span:nth-child(3) {
+            transform: rotate(-45deg) translate(6px, -6px);
+        }
+
         /* Dashboard content */
         .dashboard-content {
             padding: 48px 40px;
@@ -203,6 +233,7 @@
             letter-spacing: -1.5px;
             line-height: 1.1;
             animation: fadeInUp 0.6s ease forwards;
+            text-align: center;
         }
 
         .gradient-text {
@@ -217,6 +248,7 @@
             color: #9ca3af;
             margin-bottom: 40px;
             font-weight: 400;
+            text-align: center;
         }
 
         /* Form */
@@ -321,6 +353,7 @@
             font-weight: 700;
             color: #e4e4e7;
             margin-bottom: 20px;
+            text-align: center;
         }
 
         .tips-grid {
@@ -458,6 +491,10 @@
 
             .mobile-toggle {
                 display: block;
+            }
+
+            .hamburger {
+                display: flex;
             }
 
             .dashboard-content {
@@ -698,11 +735,11 @@
     <!-- Main Content -->
     <div class="main-content">
         <div class="topbar">
-            <button class="mobile-toggle" onclick="toggleSidebar()">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
-                </svg>
-            </button>
+            <div class="hamburger" id="hamburger" onclick="toggleSidebar()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
             <div class="topbar-greeting">{{ t.welcome }}, <strong>{{ user }}</strong></div>
             <div></div>
         </div>
@@ -809,6 +846,7 @@
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('open');
             document.getElementById('sidebarOverlay').classList.toggle('active');
+            document.getElementById('hamburger').classList.toggle('active');
         }
 
         // Loading animation system
